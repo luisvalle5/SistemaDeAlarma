@@ -1,0 +1,65 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+const char* ssid = "FAM: VALLE 2.4G";
+const char* password = "Sergio060999";
+String token = "Bearer EAAm5cpDCExoBOZCZBbULyf3OOTdwNwJxFSrMCDNN3W9HlpA24XpWwBg7nDM9leTjGlVOA06Nt3OLpfMScBAaR2ZCMS6UZAZCKq7t1iMHPFAvLuv8lKJ1DMwCuqYnrbAmSNKudZCsjsf13RDrHWc5DuZBaFjQwl9CZASiWIsZCTaPTpCHDscwBNKAhOwpFNwqbQuUfwMxOvZBDyvklUXF55j6MZD";
+String servidor = "https://graph.facebook.com/v20.0/369677929559650/messages";
+String payload = "{\"messaging_product\":\"whatsapp\",\"to\":\"51980166270\",\"type\":\"text\",\"text\":{\"body\":\"Movimiento detectado\"}}";
+
+const int pinSensorMov = 15;
+int estadoActual = LOW;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(pinSensorMov, INPUT);
+  WiFi.begin(ssid, password);
+  Serial.println("Connecting to WiFi");
+  
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  
+  Serial.println("");
+  Serial.print("Connected to WiFi. IP Address: ");
+  Serial.println(WiFi.localIP());
+}
+
+void loop() {
+  estadoActual = digitalRead(pinSensorMov);
+  
+  if (estadoActual == HIGH) {
+    Serial.println("Hay movimiento");
+    delay(5000);
+    
+    if (WiFi.status() == WL_CONNECTED) {
+      HTTPClient http;
+      http.begin(servidor.c_str());
+      http.addHeader("Content-Type", "application/json");
+      http.addHeader("Authorization", token);
+      
+      int httpPostCode = http.POST(payload);
+      
+      if (httpPostCode > 0) {
+        if (httpPostCode == HTTP_CODE_OK) {
+          Serial.println("Mensaje enviado correctamente.");
+        } else {
+          Serial.print("Error al enviar el mensaje. Código de respuesta: ");
+          Serial.println(httpPostCode);
+        }
+      } else {
+        Serial.print("Error al enviar el mensaje. HTTP POST fallido. Código de error: ");
+        Serial.println(httpPostCode);
+      }
+      
+      http.end();
+    } else {
+      Serial.println("WiFi Desconectado");
+    }
+  } else {
+    Serial.println("No hay movimiento");
+  }
+  
+  delay(1000);
+}
