@@ -1,0 +1,86 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+const char* ssid = "FAM: VALLE 2.4G";
+const char* password = "Sergio060999";
+String token = "Bearer EAAm5cpDCExoBOwwyONFrMTAcPa1UmPK5HWYHtZCx44yEqhOyYJWkybXvYj0o5yOZAdlUworB5ofptUJryOQdOU6dlmV6HATYOy16kasZBM9Q8I5M06jLLcujBPjvxzAKenn6ZBzd3GDDZAf4QH7svWgH4slDsLoWJ0LtG3kZBEwgYsUaxPS4R12Gc6mSPkzorG0ZBSXGEJDTQGpaxLEdRcT";
+String servidor = "https://graph.facebook.com/v20.0/369677929559650/messages";
+String payloadBase = "{\"messaging_product\":\"whatsapp\",\"to\":\"51980166270\",\"type\":\"text\",\"text\":{\"body\":\"Movimiento detectado en el sensor ";
+String payloadEnd = "\"}}";
+
+const int pinSensor1 = 15;
+const int pinSensor2 = 2;
+const int pinSensor3 = 4;
+
+int estadoActual1 = LOW;
+int estadoActual2 = LOW;
+int estadoActual3 = LOW;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(pinSensor1, INPUT);
+  pinMode(pinSensor2, INPUT);
+  pinMode(pinSensor3, INPUT);
+  
+  WiFi.begin(ssid, password);
+  Serial.println("Connecting to WiFi");
+  
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  
+  Serial.println("");
+  Serial.print("Connected to WiFi. IP Address: ");
+  Serial.println(WiFi.localIP());
+}
+
+void loop() {
+  estadoActual1 = digitalRead(pinSensor1);
+  estadoActual2 = digitalRead(pinSensor2);
+  estadoActual3 = digitalRead(pinSensor3);
+  
+  if (estadoActual1 == HIGH) {
+    enviarMensaje("1");
+  } else if (estadoActual2 == HIGH) {
+    enviarMensaje("2");
+  } else if (estadoActual3 == HIGH) {
+    enviarMensaje("3");
+  } else {
+    Serial.println("No hay movimiento");
+  }
+  
+  delay(1000);
+}
+
+void enviarMensaje(String sensor) {
+  Serial.print("Movimiento detectado en el sensor ");
+  Serial.println(sensor);
+  
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin(servidor.c_str());
+    http.addHeader("Content-Type", "application/json");
+    http.addHeader("Authorization", token);
+    
+    String payload = payloadBase + sensor + payloadEnd;
+    
+    int httpPostCode = http.POST(payload);
+    
+    if (httpPostCode > 0) {
+      if (httpPostCode == HTTP_CODE_OK) {
+        Serial.println("Mensaje enviado correctamente.");
+      } else {
+        Serial.print("Error al enviar el mensaje. Código de respuesta: ");
+        Serial.println(httpPostCode);
+      }
+    } else {
+      Serial.print("Error al enviar el mensaje. HTTP POST fallido. Código de error: ");
+      Serial.println(httpPostCode);
+    }
+    
+    http.end();
+  } else {
+    Serial.println("WiFi Desconectado");
+  }
+}
