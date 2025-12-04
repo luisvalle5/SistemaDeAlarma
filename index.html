@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informe Técnico: Aplicación de Cálculo Integral</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- KaTeX for Math Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    
+    <!-- Font Awesome for Icons (No SVG tags directly) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Chosen Palette: Warm Neutrals & Academic Blue -->
+    <!-- Application Structure Plan: 
+         The app transforms the technical report into an interactive dashboard.
+         1. 'Contexto y Objetivos': Uses a Radar Chart to visualize the 'Antecedents' analysis, comparing existing solutions with the developed tool.
+         2. 'Marco Teórico Interactivo': A tabbed interface allowing users to explore the mathematical concepts (Area, Volume, etc.) individually, keeping the UI clean.
+         3. 'Arquitectura y Desarrollo': A grid layout showcasing the Tech Stack and Key Features, utilizing icons for visual engagement.
+         4. 'Conclusiones y Futuro': A dual-column layout for easy scanning of final thoughts and recommendations.
+         This structure prioritizes the 'problem-solution' narrative flow of the report.
+    -->
+    <!-- Visualization & Content Choices:
+         1. Comparison Radar Chart: Visualizes the 'Antecedents' section. Goal: Compare. Method: Chart.js Radar. Justification: Shows multi-variable comparison (Access, Cost, 3D) effectively.
+         2. Math Concept Tabs: Visualizes 'Marco Teórico'. Goal: Inform/Organize. Method: HTML/JS Tabs + KaTeX. Justification: Prevents wall-of-text, allows focus on specific formulas.
+         3. Tech Stack Grid: Visualizes 'Desarrollo'. Goal: Organize. Method: Flexbox Cards. Justification: fast recognition of technologies used.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used directly (only via FontAwesome classes). NO Mermaid JS used. -->
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fdfaf6; /* Warm neutral background */
+            color: #1f2937;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .nav-item.active {
+            border-bottom: 2px solid #2563eb;
+            color: #2563eb;
+            font-weight: 600;
+        }
+        .tab-btn.active {
+            background-color: #eff6ff;
+            color: #1d4ed8;
+            border-left: 4px solid #2563eb;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (max-width: 640px) {
+            .chart-container {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header / Hero Section -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <i class="fa-solid fa-cube text-blue-600 text-2xl mr-3"></i>
+                    <h1 class="text-xl font-bold text-gray-900 tracking-tight">Informe Técnico: Calculadora Integral 3D</h1>
+                </div>
+                <!-- Desktop Nav -->
+                <nav class="hidden md:flex space-x-8">
+                    <button onclick="scrollToSection('context')" class="nav-item text-gray-500 hover:text-gray-900 px-1 pt-1 text-sm font-medium transition-colors">Contexto</button>
+                    <button onclick="scrollToSection('theory')" class="nav-item text-gray-500 hover:text-gray-900 px-1 pt-1 text-sm font-medium transition-colors">Teoría</button>
+                    <button onclick="scrollToSection('dev')" class="nav-item text-gray-500 hover:text-gray-900 px-1 pt-1 text-sm font-medium transition-colors">Desarrollo</button>
+                    <button onclick="scrollToSection('conclusions')" class="nav-item text-gray-500 hover:text-gray-900 px-1 pt-1 text-sm font-medium transition-colors">Conclusiones</button>
+                </nav>
+                <!-- Mobile Menu Button -->
+                <button onclick="toggleMobileMenu()" class="md:hidden text-gray-500 hover:text-gray-900">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+        <!-- Mobile Nav -->
+        <div id="mobile-menu" class="hidden md:hidden bg-gray-50 border-t border-gray-200">
+            <div class="px-2 pt-2 pb-3 space-y-1">
+                <button onclick="scrollToSection('context'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-md">Contexto</button>
+                <button onclick="scrollToSection('theory'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-md">Teoría</button>
+                <button onclick="scrollToSection('dev'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-md">Desarrollo</button>
+                <button onclick="scrollToSection('conclusions'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-md">Conclusiones</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 w-full">
+
+        <!-- Introduction Section -->
+        <section class="text-center max-w-3xl mx-auto mb-12">
+            <h2 class="text-3xl font-bold text-gray-900 sm:text-4xl mb-4">Democratizando el Cálculo Integral</h2>
+            <p class="text-lg text-gray-600">
+                Una solución web interactiva que conecta conceptos analíticos con interpretaciones geométricas 2D y 3D, 
+                eliminando barreras de acceso y complejidad técnica para estudiantes de matemáticas superiores.
+            </p>
+        </section>
+
+        <!-- SECTION 1: Contexto y Objetivos (Analysis of Antecedents) -->
+        <section id="context" class="scroll-mt-20">
+            <div class="mb-6">
+                <h3 class="text-2xl font-bold text-gray-900 flex items-center">
+                    <i class="fa-solid fa-bullseye text-blue-500 mr-3"></i> Contexto y Objetivos
+                </h3>
+                <p class="mt-2 text-gray-600">
+                    Esta sección analiza la problemática educativa y compara la solución propuesta con las herramientas existentes (Antecedentes), justificando el desarrollo de la aplicación.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Objectives List -->
+                <div class="card p-6">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Objetivos del Proyecto</h4>
+                    <ul class="space-y-4">
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 mt-1">
+                                <i class="fa-solid fa-check text-xs"></i>
+                            </span>
+                            <span class="ml-3 text-gray-600">
+                                <strong class="text-gray-800">General:</strong> Plataforma web educativa para cálculo y visualización gráfica.
+                            </span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-green-100 text-green-600 mt-1">
+                                <i class="fa-solid fa-calculator text-xs"></i>
+                            </span>
+                            <span class="ml-3 text-gray-600">Implementar algoritmos numéricos precisos.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-purple-100 text-purple-600 mt-1">
+                                <i class="fa-solid fa-cube text-xs"></i>
+                            </span>
+                            <span class="ml-3 text-gray-600">Integrar motor 3D (Three.js) para sólidos de revolución.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="flex-shrink-0 h-6 w-6 flex items-center justify-center rounded-full bg-yellow-100 text-yellow-600 mt-1">
+                                <i class="fa-solid fa-square-root-variable text-xs"></i>
+                            </span>
+                            <span class="ml-3 text-gray-600">Renderizado de fórmulas LaTeX paso a paso.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Analysis Chart -->
+                <div class="card p-6 flex flex-col items-center">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Análisis de Soluciones (Antecedentes)</h4>
+                    <p class="text-xs text-gray-500 mb-4 text-center">Comparativa cualitativa basada en el informe</p>
+                    <div class="chart-container">
+                        <canvas id="antecedentsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: Marco Teórico Interactivo -->
+        <section id="theory" class="scroll-mt-20">
+            <div class="mb-6">
+                <h3 class="text-2xl font-bold text-gray-900 flex items-center">
+                    <i class="fa-solid fa-book-open text-blue-500 mr-3"></i> Fundamentos Matemáticos
+                </h3>
+                <p class="mt-2 text-gray-600">
+                    Explora los conceptos matemáticos clave implementados en el motor de cálculo. Selecciona un tema para ver su definición y fórmula.
+                </p>
+            </div>
+
+            <div class="card overflow-hidden">
+                <div class="flex flex-col md:flex-row">
+                    <!-- Tabs -->
+                    <div class="md:w-1/3 bg-gray-50 border-r border-gray-200">
+                        <div id="theory-tabs" class="flex flex-col">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                    <!-- Content -->
+                    <div class="md:w-2/3 p-6 md:p-8 flex flex-col justify-center min-h-[300px]">
+                        <div id="theory-content">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: Desarrollo y Tecnología -->
+        <section id="dev" class="scroll-mt-20">
+            <div class="mb-6">
+                <h3 class="text-2xl font-bold text-gray-900 flex items-center">
+                    <i class="fa-solid fa-laptop-code text-blue-500 mr-3"></i> Arquitectura y Desarrollo
+                </h3>
+                <p class="mt-2 text-gray-600">
+                    Detalles técnicos sobre la implementación SPA, el stack tecnológico seleccionado y las funcionalidades clave desarrolladas.
+                </p>
+            </div>
+
+            <!-- Tech Stack Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+                <div class="card p-4 text-center hover:bg-blue-50 cursor-default group">
+                    <i class="fa-brands fa-react text-4xl text-blue-500 mb-2 group-hover:scale-110 transition-transform"></i>
+                    <h5 class="font-bold text-gray-800">React.js</h5>
+                    <p class="text-xs text-gray-500">Gestión de Estado</p>
+                </div>
+                <div class="card p-4 text-center hover:bg-teal-50 cursor-default group">
+                    <i class="fa-solid fa-wind text-4xl text-teal-400 mb-2 group-hover:scale-110 transition-transform"></i>
+                    <h5 class="font-bold text-gray-800">Tailwind</h5>
+                    <p class="text-xs text-gray-500">Estilos Responsivos</p>
+                </div>
+                <div class="card p-4 text-center hover:bg-orange-50 cursor-default group">
+                    <i class="fa-solid fa-square-root-variable text-4xl text-orange-500 mb-2 group-hover:scale-110 transition-transform"></i>
+                    <h5 class="font-bold text-gray-800">Math.js</h5>
+                    <p class="text-xs text-gray-500">Cálculo Simbólico</p>
+                </div>
+                <div class="card p-4 text-center hover:bg-purple-50 cursor-default group">
+                    <i class="fa-solid fa-chart-line text-4xl text-purple-500 mb-2 group-hover:scale-110 transition-transform"></i>
+                    <h5 class="font-bold text-gray-800">Fn Plot</h5>
+                    <p class="text-xs text-gray-500">Gráficas 2D</p>
+                </div>
+                <div class="card p-4 text-center hover:bg-gray-50 cursor-default group">
+                    <i class="fa-solid fa-cubes text-4xl text-gray-700 mb-2 group-hover:scale-110 transition-transform"></i>
+                    <h5 class="font-bold text-gray-800">Three.js</h5>
+                    <p class="text-xs text-gray-500">Motor 3D</p>
+                </div>
+                <div class="card p-4 text-center hover:bg-green-50 cursor-default group">
+                    <i class="fa-solid fa-font text-4xl text-green-600 mb-2 group-hover:scale-110 transition-transform"></i>
+                    <h5 class="font-bold text-gray-800">KaTeX</h5>
+                    <p class="text-xs text-gray-500">Renderizado LaTeX</p>
+                </div>
+            </div>
+
+            <!-- Features Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="card p-6 border-l-4 border-blue-500">
+                    <h4 class="font-bold text-lg mb-2">Validación Robusta</h4>
+                    <p class="text-gray-600 text-sm">El sistema detecta discontinuidades y divisiones por cero antes de calcular, previniendo errores críticos y mejorando la experiencia educativa.</p>
+                </div>
+                <div class="card p-6 border-l-4 border-green-500">
+                    <h4 class="font-bold text-lg mb-2">Visualización Híbrida</h4>
+                    <p class="text-gray-600 text-sm">Alternancia inteligente entre gráficas 2D interactivas para áreas y modelos 3D rotables para sólidos de revolución.</p>
+                </div>
+                <div class="card p-6 border-l-4 border-purple-500">
+                    <h4 class="font-bold text-lg mb-2">Caja Blanca (White Box)</h4>
+                    <p class="text-gray-600 text-sm">A diferencia de otras herramientas, muestra el desarrollo paso a paso: fórmula, sustitución y resultado, fomentando el aprendizaje.</p>
+                </div>
+                <div class="card p-6 border-l-4 border-yellow-500">
+                    <h4 class="font-bold text-lg mb-2">UX Educativa</h4>
+                    <p class="text-gray-600 text-sm">Teclado matemático integrado para facilitar la entrada de funciones complejas en dispositivos táctiles sin sintaxis confusa.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: Conclusiones y Recomendaciones -->
+        <section id="conclusions" class="scroll-mt-20">
+            <div class="mb-6">
+                <h3 class="text-2xl font-bold text-gray-900 flex items-center">
+                    <i class="fa-solid fa-clipboard-check text-blue-500 mr-3"></i> Conclusiones y Futuro
+                </h3>
+                <p class="mt-2 text-gray-600">
+                    Síntesis de los resultados obtenidos y hoja de ruta para futuras iteraciones del proyecto.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Conclusions -->
+                <div class="bg-blue-50 rounded-xl p-8 border border-blue-100">
+                    <h4 class="text-xl font-bold text-blue-900 mb-6 flex items-center">
+                        <i class="fa-solid fa-flag-checkered mr-2"></i> Conclusiones
+                    </h4>
+                    <ul class="space-y-4 text-blue-800">
+                        <li class="flex items-start">
+                            <i class="fa-solid fa-circle-check mt-1 mr-3 text-blue-600 text-sm"></i>
+                            <span>Herramienta integral exitosa cubriendo las principales aplicaciones de la integral definida.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa-solid fa-circle-check mt-1 mr-3 text-blue-600 text-sm"></i>
+                            <span>Valor pedagógico significativo mediante la visualización 3D de sólidos.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa-solid fa-circle-check mt-1 mr-3 text-blue-600 text-sm"></i>
+                            <span>Precisión adecuada para fines educativos gracias a librerías especializadas.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa-solid fa-circle-check mt-1 mr-3 text-blue-600 text-sm"></i>
+                            <span>Interfaz limpia y accesible desde cualquier dispositivo (SPA).</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Recommendations -->
+                <div class="bg-orange-50 rounded-xl p-8 border border-orange-100">
+                    <h4 class="text-xl font-bold text-orange-900 mb-6 flex items-center">
+                        <i class="fa-solid fa-lightbulb mr-2"></i> Recomendaciones
+                    </h4>
+                    <ul class="space-y-4 text-orange-800">
+                        <li class="flex items-start">
+                            <i class="fa-solid fa-arrow-trend-up mt-1 mr-3 text-orange-600 text-sm"></i>
+                            <span><strong>Cálculo Simbólico:</strong> Integrar backend (Python/SymPy) para pasos analíticos exactos.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa-solid fa-file-pdf mt-1 mr-3 text-orange-600 text-sm"></i>
+                            <span><strong>Exportación:</strong> Generar reportes PDF con gráficos para tareas escolares.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa-solid fa-layer-group mt-1 mr-3 text-orange-600 text-sm"></i>
+                            <span><strong>Nuevos Métodos:</strong> Implementar "Capas Cilíndricas".</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa-solid fa-glasses mt-1 mr-3 text-orange-600 text-sm"></i>
+                            <span><strong>WebXR:</strong> Realidad Aumentada para proyectar sólidos en el aula.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="mt-12 pt-8 border-t border-gray-200 text-center text-gray-500 text-sm pb-8">
+            <p>Basado en el Informe Técnico "Desarrollo de Aplicación Web para Cálculo Integral y Visualización 3D"</p>
+            <p class="mt-2">Referencias: Stewart, J. (2018), Larson, R. (2014), Documentación React/Three.js</p>
+        </footer>
+
+    </main>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- Data: Theoretical Framework ---
+        const theoryData = [
+            {
+                id: 'area',
+                title: 'Área de Regiones',
+                icon: 'fa-square',
+                desc: 'Cálculo del área acotada entre dos curvas continuas.',
+                latex: 'A = \\int_{a}^{b} [f(x) - g(x)] \\, dx',
+                detail: 'Si no se especifica g(x), se asume g(x)=0 (eje X). Se basa en la suma de rectángulos infinitesimales de altura (f-g) y ancho dx.'
+            },
+            {
+                id: 'volumen',
+                title: 'Volumen Revolución',
+                icon: 'fa-shapes',
+                desc: 'Método de discos para calcular el volumen generado por rotación.',
+                latex: 'V = \\pi \\int_{a}^{b} [f(x)]^2 \\, dx',
+                detail: 'El sólido se forma girando la región plana alrededor del eje X. La integral suma el volumen de infinitos discos de radio f(x) y espesor dx.'
+            },
+            {
+                id: 'arco',
+                title: 'Longitud de Arco',
+                icon: 'fa-bezier-curve',
+                desc: 'Longitud de una curva suave en un intervalo dado.',
+                latex: 'L = \\int_{a}^{b} \\sqrt{1 + [f\'(x)]^2} \\, dx',
+                detail: 'Derivado del Teorema de Pitágoras aplicado a segmentos infinitesimales de la curva.'
+            },
+            {
+                id: 'superficie',
+                title: 'Área Superficie',
+                icon: 'fa-globe',
+                desc: 'Área lateral generada al rotar una función.',
+                latex: 'S = 2\\pi \\int_{a}^{b} f(x) \\sqrt{1 + [f\'(x)]^2} \\, dx',
+                detail: 'Calcula el área de la "cáscara" del sólido. Integra el perímetro de la circunferencia (2πf(x)) por el diferencial de arco.'
+            },
+            {
+                id: 'centroide',
+                title: 'Centro de Gravedad',
+                icon: 'fa-crosshairs',
+                desc: 'Punto de equilibrio geométrico de la región plana.',
+                latex: '\\bar{x} = \\frac{M_y}{A}, \\quad \\bar{y} = \\frac{M_x}{A}',
+                detail: 'Calculado usando momentos respecto a los ejes. Representa el punto donde la región se equilibraría si fuera una lámina física.'
+            }
+        ];
+
+        // --- Functions ---
+
+        // Scroll to section
+        function scrollToSection(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // Toggle Mobile Menu
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Initialize Theory Tabs
+        function initTheorySection() {
+            const tabContainer = document.getElementById('theory-tabs');
+            const contentContainer = document.getElementById('theory-content');
+
+            // Render Tabs
+            theoryData.forEach((item, index) => {
+                const btn = document.createElement('button');
+                btn.className = `tab-btn w-full text-left px-4 py-4 flex items-center hover:bg-gray-50 transition-colors border-l-4 border-transparent ${index === 0 ? 'active' : ''}`;
+                btn.onclick = () => activateTab(index);
+                btn.innerHTML = `
+                    <i class="fa-solid ${item.icon} mr-3 text-gray-400"></i>
+                    <div>
+                        <span class="block font-semibold text-gray-700 text-sm">${item.title}</span>
+                    </div>
+                `;
+                tabContainer.appendChild(btn);
+            });
+
+            // Activate first tab
+            activateTab(0);
+        }
+
+        // Handle Tab Click
+        function activateTab(index) {
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach((btn, i) => {
+                if (i === index) {
+                    btn.classList.add('active');
+                    btn.querySelector('i').classList.replace('text-gray-400', 'text-blue-500');
+                } else {
+                    btn.classList.remove('active');
+                    btn.querySelector('i').classList.replace('text-blue-500', 'text-gray-400');
+                }
+            });
+
+            // Render Content
+            const data = theoryData[index];
+            const contentContainer = document.getElementById('theory-content');
+            contentContainer.innerHTML = `
+                <div class="animate-fade-in">
+                    <h4 class="text-2xl font-bold text-gray-900 mb-2">${data.title}</h4>
+                    <p class="text-gray-600 mb-6">${data.desc}</p>
+                    
+                    <div class="bg-gray-800 text-white p-6 rounded-lg mb-6 flex justify-center items-center overflow-x-auto">
+                        <span id="math-display-${index}" class="text-lg"></span>
+                    </div>
+                    
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4">
+                        <p class="text-sm text-blue-800">${data.detail}</p>
+                    </div>
+                </div>
+            `;
+
+            // Render Math
+            if (window.katex) {
+                katex.render(data.latex, document.getElementById(`math-display-${index}`), {
+                    throwOnError: false,
+                    displayMode: true
+                });
+            }
+        }
+
+        // Initialize Charts
+        function initCharts() {
+            const ctx = document.getElementById('antecedentsChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Accesibilidad', 'Especialización', 'Visualización 3D', 'Costo (Bajo es mejor)', 'Facilidad de Uso'],
+                    datasets: [
+                        {
+                            label: 'Este Proyecto (App Web)',
+                            data: [10, 10, 10, 10, 9], // High accessibility, highly specialized, 3D capable, Free (low cost -> high score), Easy
+                            fill: true,
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                            borderColor: 'rgb(59, 130, 246)',
+                            pointBackgroundColor: 'rgb(59, 130, 246)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgb(59, 130, 246)'
+                        },
+                        {
+                            label: 'Software Escritorio (Matlab)',
+                            data: [3, 8, 9, 2, 4], // Low access (install), Specialized, Good 3D, Expensive (low score), Hard to use
+                            fill: true,
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            borderColor: 'rgba(239, 68, 68, 0.5)',
+                            pointBackgroundColor: 'rgba(239, 68, 68, 1)',
+                            borderDash: [5, 5]
+                        },
+                        {
+                            label: 'Herramientas Web Generalistas',
+                            data: [9, 5, 4, 9, 6], // High access, Low specialization (setup required), Weak 3D setup for solids, Free, Moderate use
+                            fill: true,
+                            backgroundColor: 'rgba(107, 114, 128, 0.1)',
+                            borderColor: 'rgba(107, 114, 128, 0.5)',
+                            pointBackgroundColor: 'rgba(107, 114, 128, 1)',
+                            borderDash: [2, 2]
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    elements: {
+                        line: { borderWidth: 3 }
+                    },
+                    scales: {
+                        r: {
+                            angleLines: { display: true },
+                            suggestedMin: 0,
+                            suggestedMax: 10,
+                            ticks: { display: false } // Hide numbers for cleaner look
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.raw + '/10';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Lifecycle
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheorySection();
+            initCharts();
+        });
+
+    </script>
+</body>
+</html>
